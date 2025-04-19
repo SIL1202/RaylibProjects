@@ -1,4 +1,4 @@
 default:
-	gcc -std=c++17 -framework CoreVideo -framework IOKit -framework Cocoa -framework GLUT -framework OpenGL -Llib -Iinclude -lraylib  main.cpp -o main && ./main && rm main
+	g++ -std=c++17 -framework CoreVideo -framework IOKit -framework Cocoa -framework GLUT -framework OpenGL -Llib -Iinclude -lraylib  main.cpp -o main && ./main && rm main
 
 
