@@ -1,3 +1,5 @@
 **/.DS_Store
 **/main
-/raylib
+**/raylib/
+**/include/
+**/lib/
