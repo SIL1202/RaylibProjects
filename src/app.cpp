@@ -1,5 +1,7 @@
 #include "include/raylib.h"
+#include <cctype> // std::isprint()
 #include <iostream>
+#include <string>
 #include <vector>
 
 struct UILayout {
@@ -14,12 +16,12 @@ public:
   Vector2 pos;
   float r;
   Color color;
-  const char *text;
+  std::string text;
   Vector2 fontPos;
   int fontSize;
 
 public:
-  CircleBotton(Vector2 p, float r, Color c, const char *text, int fontSize)
+  CircleBotton(Vector2 p, float r, Color c, std::string text, int fontSize)
       : pos(p), r(r), color(c), text(text), fontSize(fontSize) {}
 
   bool isHovered() const {
@@ -33,11 +35,11 @@ public:
 
   void draw() const {
     DrawCircleV(this->pos, this->r, this->color);
-    int textWidth = MeasureText(this->text, this->fontSize);
+    int textWidth = MeasureText(this->text.c_str(), this->fontSize);
     int textX = this->pos.x - static_cast<float>(textWidth) / 2;
     int textY = this->pos.y - static_cast<float>(fontSize) / 2;
 
-    DrawText(this->text, textX, textY, fontSize, WHITE);
+    DrawText(this->text.c_str(), textX, textY, fontSize, WHITE);
   }
 };
 
@@ -52,19 +54,63 @@ void BottonHoverAnimation(CircleBotton &botton) {
 struct thing {
   int width, height;
   int x, y;
-  const char *text;
+  std::string text;
   void draw() const {
     DrawRectangle(x, y, width, height, BLACK);
-    int textWidth = MeasureText(text, 15);
+    int textWidth = MeasureText(text.c_str(), 15);
     int textX = x + width / 2 - textWidth / 2;
     int textY = y + height / 2;
 
-    DrawText(text, textX, textY, 15, WHITE);
+    DrawText(text.c_str(), textX, textY, 15, WHITE);
+  }
+};
+
+struct TextInput {
+  std::string value;
+  bool isActive = false;
+
+  void update() {
+    if (!isActive)
+      return;
+    int key = 0;
+    while ((key = GetCharPressed()) > 0) {
+      if (std::isprint(key)) {
+        value += (char)key;
+      }
+    }
+
+    if (IsKeyPressed(KEY_BACKSPACE) && !value.empty()) {
+      value.pop_back();
+    }
+  }
+
+  bool submit() {
+    if (!isActive)
+      return false;
+    if (IsKeyPressed(KEY_ENTER)) {
+      isActive = false;
+      return true;
+    }
+    if (IsKeyPressed(KEY_ESCAPE)) {
+      value.clear();
+      isActive = false;
+    }
+    return false;
+  }
+
+  void draw() {
+    if (!isActive)
+      return;
+    int x = GetScreenWidth() / 2;
+    int y = GetScreenHeight() - Margin.bottom - 30;
+    DrawRectangle(x, y, 200, 30, BLACK);
+    DrawText(value.c_str(), x + 10, y + 8, 15, WHITE);
+    std::cout << "Draw Text Box\n";
   }
 };
 
 // to-do-list's ractangle
-void AddRectangle(std::vector<thing> &ToDo, const char *text) {
+void AddRectangle(std::vector<thing> &ToDo, std::string text) {
   if (!ToDo.empty()) {
     if (ToDo[ToDo.size() - 1].y + 50 >= GetScreenHeight() - Margin.bottom) {
       return;
@@ -93,6 +139,7 @@ int main() {
       25, BLACK, "Add", 15);
 
   std::vector<thing> toDoList;
+  TextInput inputBox;
 
   while (!WindowShouldClose()) {
     // update
@@ -106,13 +153,13 @@ int main() {
                            GetScreenWidth() - Margin.bottom - AddBotton.r};
     }
 
-    if (AddBotton.isClicked()) {
-      // BottonClickedAnimation();
-      const char *inputText = "text";
-      // InputString(inputText);
+    if (AddBotton.isClicked())
+      inputBox.isActive = true;
 
-      std::cout << "clicked successfully!\n";
-      AddRectangle(toDoList, inputText);
+    inputBox.update();
+    if (inputBox.submit()) {
+      AddRectangle(toDoList, inputBox.value.c_str());
+      inputBox.value.clear();
     }
 
     // drawing
@@ -122,6 +169,8 @@ int main() {
     AddBotton.draw();
     for (const auto &list : toDoList)
       list.draw();
+
+    inputBox.draw();
     // end of drawing
     EndDrawing();
   }
