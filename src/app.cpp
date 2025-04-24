@@ -4,6 +4,31 @@
 #include <string>
 #include <vector>
 
+Font myfont;
+void InitFont() {
+  myfont = LoadFont("assets/JetBrainsMonoNerdFont-Bold.ttf");
+  if (myfont.texture.id == 0) {
+    std::cerr << "❌ Failed to load font!" << std::endl;
+    exit(1);
+  }
+}
+
+Color HexToColor(const std::string &hex) {
+  if (hex.size() != 6 && hex.size() != 8) {
+    std::cerr << "❌ Hex color format error: " << hex << "\n";
+    return WHITE;
+  }
+
+  unsigned int r = std::stoi(hex.substr(0, 2), nullptr, 16);
+  unsigned int g = std::stoi(hex.substr(2, 2), nullptr, 16);
+  unsigned int b = std::stoi(hex.substr(4, 2), nullptr, 16);
+  unsigned int a =
+      (hex.size() == 8) ? std::stoi(hex.substr(6, 2), nullptr, 16) : 255;
+
+  return Color{(unsigned char)r, (unsigned char)g, (unsigned char)b,
+               (unsigned char)a};
+}
+
 struct UILayout {
   const int top = 30;
   const int bottom = 30;
@@ -16,13 +41,17 @@ public:
   Vector2 pos;
   float r;
   Color color;
-  std::string text;
   Vector2 fontPos;
-  int fontSize;
 
 public:
-  CircleBotton(Vector2 p, float r, Color c, std::string text, int fontSize)
-      : pos(p), r(r), color(c), text(text), fontSize(fontSize) {}
+  Texture2D icon;
+
+  CircleBotton(Vector2 p, float r, Color c, const char *iconPath)
+      : pos(p), r(r), color(c) {
+    icon = LoadTexture(iconPath);
+    icon.width = icon.width * 0.0625;
+    icon.height = icon.height * 0.0625;
+  }
 
   bool isHovered() const {
     return CheckCollisionPointCircle(GetMousePosition(), this->pos, this->r);
@@ -32,23 +61,23 @@ public:
                IsMouseButtonPressed(MOUSE_BUTTON_LEFT) ||
            IsKeyPressed(KEY_TAB);
   }
+  /* int textWidth = MeasureText(this->text.c_str(), this->fontSize);
+  float textX = this->pos.x - static_cast<float>(textWidth) / 2;
+  float textY = this->pos.y - static_cast<float>(fontSize) / 2;
+  Vector2 pos{textX, textY};
 
+  DrawTextEx(myfont, this->text.c_str(), pos, fontSize, 2, WHITE); */
   void draw() const {
-    DrawCircleV(this->pos, this->r, this->color);
-    int textWidth = MeasureText(this->text.c_str(), this->fontSize);
-    int textX = this->pos.x - static_cast<float>(textWidth) / 2;
-    int textY = this->pos.y - static_cast<float>(fontSize) / 2;
-
-    DrawText(this->text.c_str(), textX, textY, fontSize, WHITE);
+    DrawCircleV(pos, r, color);
+    if (icon.id != 0)
+      DrawTexture(icon, pos.x - (float)icon.width / 2,
+                  pos.y - (float)icon.height / 2, WHITE);
   }
+
+  ~CircleBotton() { UnloadTexture(icon); }
 };
 
-void BottonHoverAnimation(CircleBotton &botton) {
-  float radius = 35;
-  int fontSize = 18;
-  botton.r = radius;
-  botton.fontSize = fontSize;
-}
+// void BottonHoverAnimation(CircleBotton &botton) {}
 
 // one thing in to-do-list
 struct thing {
@@ -58,10 +87,10 @@ struct thing {
   void draw() const {
     DrawRectangle(x, y, width, height, BLACK);
     int textWidth = MeasureText(text.c_str(), 15);
-    int textX = x + width / 2 - textWidth / 2;
-    int textY = y + height / 2;
-
-    DrawText(text.c_str(), textX, textY, 15, WHITE);
+    float textX = x + (float)width / 2 - (float)textWidth / 2;
+    float textY = y + (float)height / 2;
+    Vector2 pos{textX, textY};
+    DrawTextEx(myfont, text.c_str(), pos, 15, 2, WHITE);
   }
 };
 
@@ -101,11 +130,11 @@ struct TextInput {
   void draw() {
     if (!isActive)
       return;
-    int x = GetScreenWidth() / 2;
-    int y = GetScreenHeight() - Margin.bottom - 30;
-    DrawRectangle(x, y, 200, 30, BLACK);
-    DrawText(value.c_str(), x + 10, y + 8, 15, WHITE);
-    std::cout << "Draw Text Box\n";
+    float x = (float)GetScreenWidth() / 2;
+    float y = GetScreenHeight() - Margin.bottom - 0;
+    Vector2 pos{x + 10, y + 15};
+    DrawRectangle(x, y, 200, 30, HexToColor("CFD1C4"));
+    DrawTextEx(myfont, value.c_str(), pos, 15, 2, WHITE);
   }
 };
 
@@ -136,7 +165,7 @@ int main() {
   CircleBotton AddBotton(
       {static_cast<float>(GetScreenWidth() - Margin.right - 25),
        static_cast<float>(GetScreenHeight() - Margin.bottom - 25)},
-      25, BLACK, "Add", 15);
+      25, HexToColor("A8B2AA"), "assets/PlusIcon.png");
 
   std::vector<thing> toDoList;
   TextInput inputBox;
@@ -145,12 +174,9 @@ int main() {
     // update
     // show botton animation
     if (AddBotton.isHovered()) {
-      BottonHoverAnimation(AddBotton);
+      AddBotton.color = HexToColor("BBBEB5");
     } else { // reset botton position
-      AddBotton.r = 25;
-      AddBotton.fontSize = 15;
-      AddBotton.fontPos = {GetScreenWidth() - Margin.right - AddBotton.r,
-                           GetScreenWidth() - Margin.bottom - AddBotton.r};
+      AddBotton.color = HexToColor("A8B2AA");
     }
 
     if (AddBotton.isClicked())
@@ -165,7 +191,7 @@ int main() {
     // drawing
     BeginDrawing();
 
-    ClearBackground(WHITE);
+    ClearBackground(HexToColor("A8B2AA"));
     AddBotton.draw();
     for (const auto &list : toDoList)
       list.draw();
