@@ -1,5 +1,6 @@
 #include "include/raylib.h"
 #include <cctype> // std::isprint()
+#include <cmath>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -40,7 +41,7 @@ class CircleBotton {
 public:
   Vector2 pos;
   float r;
-  Color color;
+  Color color; // for original botton color
   Vector2 fontPos;
 
 public:
@@ -61,13 +62,9 @@ public:
                IsMouseButtonPressed(MOUSE_BUTTON_LEFT) ||
            IsKeyPressed(KEY_TAB);
   }
-  /* int textWidth = MeasureText(this->text.c_str(), this->fontSize);
-  float textX = this->pos.x - static_cast<float>(textWidth) / 2;
-  float textY = this->pos.y - static_cast<float>(fontSize) / 2;
-  Vector2 pos{textX, textY};
 
-  DrawTextEx(myfont, this->text.c_str(), pos, fontSize, 2, WHITE); */
-  void draw() const {
+  // drawing original circle botton and texture icon
+  virtual void draw() const {
     DrawCircleV(pos, r, color);
     if (icon.id != 0)
       DrawTexture(icon, pos.x - (float)icon.width / 2,
@@ -77,7 +74,49 @@ public:
   ~CircleBotton() { UnloadTexture(icon); }
 };
 
-// void BottonHoverAnimation(CircleBotton &botton) {}
+class ExpandBotton : public CircleBotton {
+private:
+  float currentWidth;
+  float targetWidth;
+  bool isExpanding;
+  bool isExpanded;
+
+public:
+  ExpandBotton(Vector2 p, float r, Color c, const char *iconPath,
+               float expandWidth)
+      : CircleBotton(p, r, c, iconPath), isExpanding(false), isExpanded(false),
+        currentWidth(r * 2), targetWidth(expandWidth) {}
+
+  // update expanding animation
+  void update() {
+    if (isExpanding && currentWidth < targetWidth) {
+      currentWidth += 5;
+      if (currentWidth >= targetWidth) {
+        currentWidth = targetWidth;
+        isExpanding = false;
+        isExpanded = false;
+      }
+    }
+  }
+
+  void triggerExpand() {
+    if (!isExpanded)
+      isExpanding = true;
+  }
+
+  // drawing rounded ractangle
+  void draw() const override {
+    if (isExpanded || isExpanding) {
+      float x = pos.x - this->currentWidth / 2;
+      Rectangle rec{.x = x,
+                    .y = pos.y - this->r,
+                    .width = this->currentWidth,
+                    .height = r * 2};
+      DrawRectangleRounded(rec, 1.0f, 32, HexToColor("CFD1C4"));
+    } else
+      CircleBotton::draw();
+  }
+};
 
 // one thing in to-do-list
 struct thing {
@@ -98,6 +137,7 @@ struct TextInput {
   std::string value;
   bool isActive = false;
 
+  // handling text input, detecting characters key pressed
   void update() {
     if (!isActive)
       return;
@@ -127,18 +167,22 @@ struct TextInput {
     return false;
   }
 
+  // delete DrawRectangle here and move it to ExpandBotton.
+  // remain DrawTextEx here.
   void draw() {
     if (!isActive)
       return;
-    float x = (float)GetScreenWidth() / 2;
-    float y = GetScreenHeight() - Margin.bottom - 0;
-    Vector2 pos{x + 10, y + 15};
-    DrawRectangle(x, y, 200, 30, HexToColor("CFD1C4"));
-    DrawTextEx(myfont, value.c_str(), pos, 15, 2, WHITE);
+    int recX = Margin.left + 25;
+    int recY = GetScreenHeight() - Margin.bottom - 50;
+    float textX = recX;
+    float textY = GetScreenHeight() - Margin.bottom - 50;
+    Vector2 textPos{textX + 10, textY + 15};
+    // DrawRectangle(recX, recY, 400, 50, HexToColor("CFD1C4"));
+    DrawTextEx(myfont, value.c_str(), textPos, 20, 5, WHITE);
   }
 };
 
-// to-do-list's ractangle
+// independently adding to-do-list's ractangle
 void AddRectangle(std::vector<thing> &ToDo, std::string text) {
   if (!ToDo.empty()) {
     if (ToDo[ToDo.size() - 1].y + 50 >= GetScreenHeight() - Margin.bottom) {
@@ -162,40 +206,52 @@ int main() {
   InitWindow(800, 600, "To-Do-List");
   SetWindowState(FLAG_WINDOW_RESIZABLE);
 
-  CircleBotton AddBotton(
-      {static_cast<float>(GetScreenWidth() - Margin.right - 25),
-       static_cast<float>(GetScreenHeight() - Margin.bottom - 25)},
-      25, HexToColor("A8B2AA"), "assets/PlusIcon.png");
+  /*  CircleBotton AddBotton(
+       {static_cast<float>(GetScreenWidth() - Margin.right - 25),
+        static_cast<float>(GetScreenHeight() - Margin.bottom - 25)},
+       25, HexToColor("A8B2AA"), "assets/PlusIcon.png"); */
 
   std::vector<thing> toDoList;
   TextInput inputBox;
+  ExpandBotton addbtn(
+      {static_cast<float>(GetScreenWidth() - Margin.right - 25),
+       static_cast<float>(GetScreenHeight() - Margin.bottom - 25)},
+      25, HexToColor("A8B2AA"), "assets/PlusIcon.png",
+      GetScreenWidth() - Margin.right - Margin.left);
 
   while (!WindowShouldClose()) {
     // update
+
+    /* --------------handling adding system -----------------*/
     // show botton animation
-    if (AddBotton.isHovered()) {
-      AddBotton.color = HexToColor("BBBEB5");
-    } else { // reset botton position
-      AddBotton.color = HexToColor("A8B2AA");
+    if (addbtn.isHovered()) {
+      addbtn.color = HexToColor("BBBEB5"); // 變淺
+    } else {                               // reset botton position
+      addbtn.color = HexToColor("A8B2AA"); // 回復
     }
 
-    if (AddBotton.isClicked())
-      inputBox.isActive = true;
-
+    if (addbtn.isClicked()) {
+      addbtn.triggerExpand();
+      // inputBox.isActive = true;
+    }
+    addbtn.update();
+    // handling inputBox
     inputBox.update();
     if (inputBox.submit()) {
-      AddRectangle(toDoList, inputBox.value.c_str());
+      AddRectangle(toDoList, inputBox.value.c_str()); // adding list in here
       inputBox.value.clear();
     }
+    /* --------------handling adding system -----------------*/
 
     // drawing
     BeginDrawing();
 
     ClearBackground(HexToColor("A8B2AA"));
-    AddBotton.draw();
+    // AddBotton.draw();
     for (const auto &list : toDoList)
       list.draw();
 
+    addbtn.draw();
     inputBox.draw();
     // end of drawing
     EndDrawing();
