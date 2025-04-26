@@ -6,6 +6,22 @@
 Font myfont;
 UILayout Margin;
 
+Color HexToColor(const std::string &hex) {
+  if (hex.size() != 6 && hex.size() != 8) {
+    std::cerr << "❌ Hex color format error: " << hex << "\n";
+    return WHITE;
+  }
+
+  unsigned int r = std::stoi(hex.substr(0, 2), nullptr, 16);
+  unsigned int g = std::stoi(hex.substr(2, 2), nullptr, 16);
+  unsigned int b = std::stoi(hex.substr(4, 2), nullptr, 16);
+  unsigned int a =
+      (hex.size() == 8) ? std::stoi(hex.substr(6, 2), nullptr, 16) : 255;
+
+  return Color{(unsigned char)r, (unsigned char)g, (unsigned char)b,
+               (unsigned char)a};
+}
+
 void InitFont() {
   myfont = LoadFontEx("../assets/JetBrainsMonoNerdFont-Bold.ttf", 32, 0, 250);
   if (myfont.texture.id == 0) {

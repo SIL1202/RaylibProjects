@@ -1,20 +1,5 @@
 #include "Botton.hpp"
-
-Color HexToColor(const std::string &hex) {
-  if (hex.size() != 6 && hex.size() != 8) {
-    std::cerr << "❌ Hex color format error: " << hex << "\n";
-    return WHITE;
-  }
-
-  unsigned int r = std::stoi(hex.substr(0, 2), nullptr, 16);
-  unsigned int g = std::stoi(hex.substr(2, 2), nullptr, 16);
-  unsigned int b = std::stoi(hex.substr(4, 2), nullptr, 16);
-  unsigned int a =
-      (hex.size() == 8) ? std::stoi(hex.substr(6, 2), nullptr, 16) : 255;
-
-  return Color{(unsigned char)r, (unsigned char)g, (unsigned char)b,
-               (unsigned char)a};
-}
+#include "Global.hpp"
 
 CircleBotton::CircleBotton(Vector2 p, float r, Color c, const char *iconPath)
     : pos(p), r(r), color(c) {
