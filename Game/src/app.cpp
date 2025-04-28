@@ -1,6 +1,8 @@
 #include "Botton.hpp"
 #include "Global.hpp"
 #include "TextInput.hpp"
+#include <string>
+#include <utility>
 
 // extern 在這裡真正定義，才會在記憶體上開空間
 Font myfont;
@@ -30,36 +32,35 @@ void InitFont() {
   }
 }
 
-// one thing in to-do-list
-struct thing {
-  int width, height;
-  int x, y;
-  std::string text;
-  void draw() const {
-    DrawRectangle(x, y, width, height, HexToColor("FFC3CC"));
-    int textWidth = MeasureText(text.c_str(), 30);
-    float textX = x + (float)width / 2 - (float)textWidth / 2;
-    float textY = y + (float)height / 4;
-    Vector2 pos{textX, textY};
-    DrawTextEx(myfont, text.c_str(), pos, 30, 2, HexToColor("28301C"));
-  }
-};
-
 // independently adding to-do-list's ractangle
-void AddRectangle(std::vector<thing> &ToDo, std::string text) {
-  if (!ToDo.empty()) {
-    if (ToDo[ToDo.size() - 1].y + 50 >= GetScreenHeight() - Margin.bottom) {
+void AddRectangle(
+    std::vector<std::pair<thing, std::unique_ptr<CircleBotton>>> &Object,
+    const std::string &text) {
+  float recX = static_cast<float>(Margin.left) * 2;
+  float height = 40.f;
+  float bottonRadius = 25.f;
+  float bottonCenterX = GetScreenWidth() - Margin.right - bottonRadius;
+
+  if (!Object.empty()) {
+    float lowestY = Object.back().first.y + 50.f;
+    if (lowestY >= GetScreenHeight() - Margin.bottom)
       return;
-    }
-    thing todo{.width = 400,
-               .height = 40,
-               .x = ToDo[ToDo.size() - 1].x,
-               .y = ToDo[ToDo.size() - 1].y + 50,
-               .text = text};
-    ToDo.emplace_back(todo);
-    return;
   }
-  ToDo.emplace_back(thing{400, 40, GetScreenWidth() / 2 - 400 / 2, 30, text});
+
+  float startY = 40.f;
+  float gap = 50.f;
+
+  thing newThing{height, recX, 0.f, text};
+  auto newBotton = std::make_unique<CircleBotton>(
+      Vector2{bottonCenterX, 0.f}, bottonRadius,
+      Fade(HexToColor("28301C"), 0.0f), "../assets/PlusIcon.png", 45.0f);
+  Object.insert(Object.begin(), {newThing, std::move(newBotton)});
+
+  for (size_t i = 0; i < Object.size(); ++i) {
+    Object[i].first.y = startY + gap * i;
+    Object[i].second->pos.y = startY + bottonRadius + gap * i;
+    Object[i].second->rotation = 45.0f;
+  }
 }
 
 int main() {
@@ -68,23 +69,19 @@ int main() {
   InitFont();
   SetWindowState(FLAG_WINDOW_RESIZABLE);
 
-  std::vector<thing> toDoList;
+  std::vector<std::pair<thing, std::unique_ptr<CircleBotton>>> toDoList;
+
   TextInput inputBox;
   ExpandBotton addbtn(
       {static_cast<float>(GetScreenWidth() - Margin.right - 25),
        static_cast<float>(GetScreenHeight() - Margin.bottom - 25)},
-      25, HexToColor("28301C"), "../assets/PlusIcon.png",
+      25, Fade(HexToColor("28301C"), 0.0f), "../assets/PlusIcon.png",
       GetScreenWidth() - Margin.right - Margin.left);
 
   while (!WindowShouldClose()) {
     // update
     /* --------------handling adding system -----------------*/
     // show botton animation
-    if (addbtn.isHovered()) {
-      addbtn.color = HexToColor("BBBEB5"); // 變淺
-    } else {                               // reset botton position
-      addbtn.color = HexToColor("28301C"); // 回復
-    }
 
     if (addbtn.isClicked()) {
       addbtn.triggerExpand();
@@ -102,12 +99,21 @@ int main() {
     }
     /* --------------handling adding system -----------------*/
 
+    /* --------------handling deleting system -----------------*/
+    for (auto &botton : toDoList) {
+      botton.second->update();
+    }
+
+    /* --------------handling deleting system -----------------*/
+
     // drawing
     BeginDrawing();
     ClearBackground(HexToColor("28301C"));
     // AddBotton.draw();
-    for (const auto &list : toDoList)
-      list.draw();
+    for (auto &list : toDoList) {
+      list.first.draw();   // draw list's rectangles
+      list.second->draw(); // draw list's rectangles
+    }
     addbtn.draw();
     inputBox.draw();
 
