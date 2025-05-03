@@ -18,15 +18,14 @@ struct Graph {
   std::vector<Vertex> nodes;
 
   void draw() const {
-    for (const Vertex &node : nodes)
-      DrawCircle(node.centerX, node.centerY, node.r, node.color);
-
     for (const Vertex &node : nodes) {
       for (int i : node.neighbors) {
         DrawLine(node.centerX, node.centerY, nodes[i].centerX, nodes[i].centerY,
                  BLACK);
       }
     }
+    for (const Vertex &node : nodes)
+      DrawCircle(node.centerX, node.centerY, node.r, node.color);
   }
 };
 
