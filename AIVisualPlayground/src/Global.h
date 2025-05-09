@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+extern Font font;
 Color Hex_to_deci(const std::string &color);
 
 struct UILayout {

@@ -43,6 +43,17 @@ bool Botton::isHover() {
   return mask[localY * width + localX];
 }
 
+bool Botton::isPressed() {
+  Vector2 mouse = GetMousePosition();
+  int localX = mouse.x - pos.x;
+  int localY = mouse.y - pos.y;
+
+  if (localX < 0 || localY < 0 || localX >= width || localY >= height)
+    return false;
+  return mask[localY * width + localX] &&
+         IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+}
+
 void Botton::draw() {
   float scale = isHover() ? 1.2f : 1.0f;
 

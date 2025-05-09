@@ -4,13 +4,21 @@
 #include <queue>
 #include <vector>
 
+Font font;
 struct Vertex {
   int centerX, centerY;
   float r;
   Color color;
+  const char *text;
   std::vector<int> neighbors;
 
-  void draw() const { DrawCircle(centerX, centerY, r, color); }
+  void draw() const {
+    DrawCircle(centerX, centerY, r, color);
+    int textWidth = MeasureText(text, 20);
+    DrawTextEx(font, text,
+               {(float)(centerX - textWidth) / 2, (float)centerY - 10}, 20, 5,
+               WHITE);
+  }
 };
 
 struct Graph {
@@ -24,7 +32,7 @@ struct Graph {
       }
     }
     for (const Vertex &node : nodes)
-      DrawCircle(node.centerX, node.centerY, node.r, node.color);
+      node.draw();
   }
 };
 
@@ -95,24 +103,24 @@ public:
 int main() {
   // initialize
   InitWindow(800, 600, "graph");
-
+  font = LoadFontEx("../assets/JetBrainsMonoNerdFont-Bold.ttf", 20, 0, 250);
   Botton Next("../assets/triangle.png",
               {(float)GetScreenWidth() - Margin.right * 6,
                (float)GetScreenHeight() - 65});
 
   Graph G;
   // A = 0
-  G.nodes.push_back({150, 150, 20, BLACK, {2, 4}}); // A -> C, E
+  G.nodes.push_back({150, 150, 20, BLACK, "A", {2, 4}}); // A -> C, E
   // B = 1
-  G.nodes.push_back({650, 150, 20, BLACK, {5}}); // B -> F
+  G.nodes.push_back({650, 150, 20, BLACK, "B", {5}}); // B -> F
   // C = 2
-  G.nodes.push_back({350, 180, 20, BLACK, {1, 3, 5}}); // C -> B, D, F
-  // D = 3
-  G.nodes.push_back({350, 400, 20, BLACK, {5}}); // D -> F
+  G.nodes.push_back({350, 180, 20, BLACK, "C", {1, 3, 5}}); // C -> B, D, F
+                                                            // D = 3
+  G.nodes.push_back({350, 400, 20, BLACK, "D", {5}});       // D -> F
   // E = 4
-  G.nodes.push_back({120, 500, 20, BLACK, {5}}); // E -> F
+  G.nodes.push_back({120, 500, 20, BLACK, "E", {5}}); // E -> F
   // F = 5
-  G.nodes.push_back({650, 450, 20, BLACK, {}}); // F has no outgoing edges
+  G.nodes.push_back({650, 450, 20, BLACK, "F", {}}); // F has no outgoing edges
 
   Block B;
   BFSrunner bfs(&G);
@@ -123,7 +131,8 @@ int main() {
     B.draw();
     G.draw();
     Next.draw();
-    // bfs.step();
+    if (Next.isPressed())
+      bfs.step();
     // end drawing
     EndDrawing();
   }
