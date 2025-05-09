@@ -1,8 +1,7 @@
 #include "../include/raylib.h"
 #include "Global.h"
-#include <chrono>
+#include <iostream>
 #include <queue>
-#include <thread>
 #include <vector>
 
 struct Vertex {
@@ -29,37 +28,77 @@ struct Graph {
   }
 };
 
-void BFS(Graph &g) {
-  std::vector<bool> visited(g.nodes.size(), false);
-  std::queue<int> q;
-  g.nodes[0].color = GREEN;
-  visited[0] = true;
-  q.push(0); // init node
+class Block {
+private:
+  std::vector<std::pair<Rectangle, const char *>> blocks;
 
-  while (!q.empty()) {
-    int current = q.front();
-    q.pop();
-
-    for (int neighbor : g.nodes[current].neighbors) {
-      if (!visited[neighbor]) {
-        visited[neighbor] = true;
-        g.nodes[neighbor].color = GREEN;
-
-        BeginDrawing();
-        ClearBackground(Hex_to_deci("ffffff"));
-        g.draw();
-        EndDrawing();
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        q.push(neighbor);
+public:
+  Block() {
+    float startX = 50;
+    float startY = GetScreenHeight() - 60;
+    for (int i = 0; i < 6; i++) {
+      blocks.push_back({{startX + i * 40, startY, 40, 40}, ""});
+    }
+  }
+  void enqueue(const char *text, int index) {
+    if (index < blocks.size())
+      blocks[index].second = text;
+  }
+  void dequeue(int index) {
+    if (index < blocks.size())
+      blocks[index].second = "";
+  }
+  void draw() {
+    for (auto &block : blocks) {
+      DrawRectangleRec(block.first, LIGHTGRAY);
+      DrawRectangleLinesEx(block.first, 2, BLACK);
+      if (block.second) {
+        float textWidth = MeasureText(block.second, 20);
+        DrawText(block.second,
+                 block.first.x + block.first.width / 2 - textWidth / 2,
+                 block.first.y + block.first.height / 2 - 10, 20, BLACK);
       }
     }
   }
-}
+};
+
+class BFSrunner {
+public:
+  Graph *G;
+  std::vector<bool> visited;
+  std::queue<int> q;
+
+  BFSrunner(Graph *g) : G(g), visited(g->nodes.size(), false) {
+    visited[0] = true;
+    q.push(0); // init node
+    G->nodes[0].color = GREEN;
+  }
+
+  bool step() {
+    if (q.empty())
+      return false;
+    int current = q.front();
+    q.pop();
+
+    for (int neighbor : G->nodes[current].neighbors) {
+      if (!visited[neighbor]) {
+        visited[neighbor] = true;
+        G->nodes[neighbor].color = GREEN;
+        q.push(neighbor);
+        break;
+      }
+    }
+    return true;
+  }
+};
 
 int main() {
   // initialize
   InitWindow(800, 600, "graph");
+
+  Botton Next("../assets/triangle.png",
+              {(float)GetScreenWidth() - Margin.right * 6,
+               (float)GetScreenHeight() - 65});
 
   Graph G;
   // A = 0
@@ -75,13 +114,16 @@ int main() {
   // F = 5
   G.nodes.push_back({650, 450, 20, BLACK, {}}); // F has no outgoing edges
 
-  BFS(G);
+  Block B;
+  BFSrunner bfs(&G);
   while (!WindowShouldClose()) {
     // drawing
     BeginDrawing();
-
     ClearBackground(Hex_to_deci("ffffff"));
+    B.draw();
     G.draw();
+    Next.draw();
+    // bfs.step();
     // end drawing
     EndDrawing();
   }
