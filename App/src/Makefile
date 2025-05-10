@@ -1,2 +1,13 @@
-app:
-	g++ -std=c++17 -framework CoreVideo -framework IOKit -framework Cocoa -framework GLUT -framework OpenGL -L../lib -I../include -lraylib  *.cpp -o app && ./app && rm app
+CXX = g++
+CXXFLAGS = -std=c++17 -I/opt/homebrew/include
+LDFLAGS = -L/opt/homebrew/lib -lraylib \
+  -framework CoreVideo -framework IOKit -framework Cocoa -framework OpenGL
+
+SRC = *.cpp
+OUT = app
+
+$(OUT): $(SRC)
+	$(CXX) $(CXXFLAGS) $(SRC) -o $(OUT) $(LDFLAGS) && ./app && rm app
+
+clean:
+	rm -f $(OUT)
