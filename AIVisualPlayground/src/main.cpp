@@ -2,9 +2,7 @@
 #include "../include/raymath.h"
 #include "Global.h"
 #include <algorithm>
-#include <filesystem>
 #include <iostream>
-#include <numeric>
 #include <queue>
 #include <vector>
 
@@ -15,14 +13,14 @@ struct Vertex {
   int centerX, centerY;
   float r;
   Color color;
-  const char *text;
+  std::string text;
   std::vector<int> neighbors;
 
   void draw() const {
     DrawCircle(centerX, centerY, r, color);
-    int textWidth = MeasureText(text, 20);
-    DrawText(text, (centerX - (float)textWidth / 2), (float)centerY - 10, 20,
-             Hex_to_deci("212121"));
+    int textWidth = MeasureText(text.c_str(), 20);
+    DrawText(text.c_str(), (centerX - (float)textWidth / 2),
+             (float)centerY - 10, 20, Hex_to_deci("212121"));
   }
 };
 
@@ -65,14 +63,15 @@ struct Graph {
         if (++attempts >= MAX_ATTEMPTS) {
           std::cerr << "Warning: 無法為節點 " << i << " 找到合適位置\n";
           // 強制放置但標記為紅色
-          nodes.push_back({x, y, r, RED, TextFormat("%c", 'A' + i), {}});
+
+          nodes.push_back({x, y, r, RED, std::string(1, 'A' + i), {}});
           valid = true; // 跳出循環
         }
       } while (!valid);
 
       if (attempts < MAX_ATTEMPTS) {
         nodes.push_back(
-            {x, y, r, COLOR_UNVISITED, TextFormat("%c", 'A' + i), {}});
+            {x, y, r, COLOR_UNVISITED, std::string(1, 'A' + i), {}});
       }
     }
 
@@ -313,7 +312,7 @@ int main() {
   G.generateRandomNodes(6, GetScreenWidth(), GetScreenHeight());
 
   Block B;
-  B.enqueue(G.nodes[0].text);
+  B.enqueue(G.nodes[0].text.c_str());
   BFSrunner bfs(&G);
   bool wasDown = false;
   while (!WindowShouldClose()) {
@@ -333,7 +332,7 @@ int main() {
         // Traversal complete
         std::cout << "BFS traversal complete!\n";
       } else if (id >= 0) {
-        B.enqueue(G.nodes[id].text);
+        B.enqueue(G.nodes[id].text.c_str());
       } else if (id == -1) {
         B.dequeue();
       }
