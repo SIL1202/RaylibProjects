@@ -1,6 +1,6 @@
 #pragma once
 #include<string>
-#include "../include/raylib.h"
+#include<raylib.h>
 
 struct TextInput {
   std::string value;
