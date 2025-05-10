@@ -97,7 +97,7 @@ void Botton::draw_tri() {
 
   Vector2 drawPos = {pos.x - offsetX, pos.y - offsetY};
 
-  DrawTextureEx(icon, drawPos, 0.0f, scale, WHITE);
+  DrawTextureEx(icon, drawPos, 0.0f, scale, COLOR_NEXT);
 }
 
 void Botton::draw_rec() {
@@ -108,5 +108,5 @@ void Botton::draw_rec() {
 
   Vector2 drawPos = {pos.x - offsetX, pos.y - offsetY};
   Rectangle rec = {drawPos.x, drawPos.y, width * scale, height * scale};
-  DrawRectanglePro(rec, {0, 0}, 0.0f, BLACK);
+  DrawRectanglePro(rec, {0, 0}, 0.0f, COLOR_RESET);
 }

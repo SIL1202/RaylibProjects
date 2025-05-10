@@ -2,6 +2,11 @@
 #include "../include/raylib.h"
 #include <string>
 #include <vector>
+// vertex color
+#define COLOR_UNVISITED LIGHTGRAY
+#define COLOR_VISITED Hex_to_deci("478058")
+#define COLOR_RESET Hex_to_deci("FF5733")
+#define COLOR_NEXT Hex_to_deci("478058")
 
 extern Font font;
 Color Hex_to_deci(const std::string &color);
