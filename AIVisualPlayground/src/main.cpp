@@ -2,6 +2,7 @@
 #include "../include/raymath.h"
 #include "Global.h"
 #include <algorithm>
+#include <filesystem>
 #include <iostream>
 #include <numeric>
 #include <queue>
@@ -20,7 +21,7 @@ struct Vertex {
     DrawCircle(centerX, centerY, r, color);
     int textWidth = MeasureText(text, 20);
     DrawText(text, (centerX - (float)textWidth / 2), (float)centerY - 10, 20,
-             WHITE);
+             Hex_to_deci("212121"));
   }
 };
 
@@ -42,7 +43,7 @@ struct Graph {
           to = Vector2Add(from, Vector2Scale(unit, len - radius));
         }
 
-        DrawArrow(from, to, 10.0f, BLACK);
+        DrawArrow(from, to, 10.0f, Hex_to_deci("424242"));
       }
     } /*  for (const Vertex &node : nodes) {
         for (int i : node.neighbors) {
@@ -57,36 +58,48 @@ struct Graph {
 
 class Block {
 private:
-  std::vector<std::pair<Rectangle, const char *>> blocks;
+  std::vector<const char *> blocks;
 
 public:
-  Block() {
-    float startX = 50;
-    float startY = GetScreenHeight() - 60;
-    for (int i = 0; i < 6; i++) {
-      blocks.push_back({{startX + i * 40, startY, 40, 40}, ""});
-    }
-  }
-  void enqueue(const char *text, int index) {
-    if (index < blocks.size())
-      blocks[index].second = text;
-  }
-  void dequeue(int index) {
-    if (index < blocks.size())
-      blocks[index].second = "";
-  }
-  void draw() {
-    for (auto &block : blocks) {
-      DrawRectangleRec(block.first, LIGHTGRAY);
-      DrawRectangleLinesEx(block.first, 2, BLACK);
-      if (block.second) {
-        float textWidth = MeasureText(block.second, 20);
-        DrawText(block.second,
-                 block.first.x + block.first.width / 2 - textWidth / 2,
-                 block.first.y + block.first.height / 2 - 10, 20, BLACK);
+  Block() { blocks.resize(6, nullptr); }
+
+  void enqueue(const char *text) {
+    for (int i = 0; i < blocks.size(); i++) {
+      if (blocks[i] == nullptr) {
+        blocks[i] = text;
+        break;
       }
     }
   }
+
+  void dequeue() {
+    for (int i = 0; i < blocks.size(); i++) {
+      if (blocks[i] != nullptr) {
+        // remove first occupied
+        for (int j = i; j < blocks.size() - 1; j++) {
+          blocks[j] = blocks[j + 1];
+        }
+        blocks.back() = nullptr;
+        break;
+      }
+    }
+  }
+
+  void draw() {
+    for (int i = 0; i < blocks.size(); i++) {
+      Rectangle rect = {(float)(50 + i * 40), (float)(GetScreenHeight() - 60),
+                        40, 40};
+      DrawRectangleRec(rect, Hex_to_deci("F5F5F5"));
+      DrawRectangleLinesEx(rect, 2, Hex_to_deci("9E9E9E"));
+      if (blocks[i]) {
+        float textWidth = MeasureText(blocks[i], 20);
+        DrawText(blocks[i], rect.x + rect.width / 2 - textWidth / 2,
+                 rect.y + rect.height / 2 - 10, 20, Hex_to_deci("212121"));
+      }
+    }
+  }
+
+  void clear() { std::fill(blocks.begin(), blocks.end(), nullptr); }
 };
 
 void DrawArrow(Vector2 start, Vector2 end, float arrowSize, Color color) {
@@ -126,35 +139,44 @@ public:
   std::queue<int> q;
 
   BFSrunner(Graph *g) : G(g), visited(g->nodes.size(), false) {
-    visited[0] = true;
-    q.push(0); // init node
-    G->nodes[0].color = GREEN;
+    reset(); // Initialize with reset
   }
 
   int currentNode = -1;
   size_t neighborIndex = 0;
-  bool step() {
-    if (currentNode == -1) {
-      if (q.empty())
-        return false;
-      currentNode = q.front();
-      q.pop();
+
+  int step() {
+    // If we're processing neighbors of a node
+    if (currentNode != -1) {
+      auto &neighbors = G->nodes[currentNode].neighbors;
+      while (neighborIndex < neighbors.size()) {
+        int neighbor = neighbors[neighborIndex++];
+        if (!visited[neighbor]) {
+          visited[neighbor] = true;
+          G->nodes[neighbor].color = COLOR_VISITED;
+          q.push(neighbor);
+          std::cout << "push: " << G->nodes[neighbor].text << std::endl;
+          return neighbor;
+        }
+      }
+
+      // Done processing all neighbors
+      std::cout << "pop: " << G->nodes[currentNode].text << std::endl;
+      currentNode = -1;
       neighborIndex = 0;
     }
 
-    auto neighbors = G->nodes[currentNode].neighbors;
-    while (neighborIndex < neighbors.size()) {
-      int neighbor = neighbors[neighborIndex++];
-      if (!visited[neighbor]) {
-        G->nodes[neighbor].color = GREEN;
-        q.push(neighbor);
-        return true;
-      }
+    // Get next node from queue
+    if (!q.empty()) {
+      currentNode = q.front();
+      q.pop();
+      std::cout << "pop: " << G->nodes[currentNode].text << std::endl;
+      neighborIndex = 0;
+      return -1; // Return -1 to indicate we're processing a new node
     }
 
-    currentNode = -1;
-    step();
-    return true;
+    // Queue is empty, traversal complete
+    return -2; // Indicate traversal is complete
   }
 
   void reset() {
@@ -163,12 +185,15 @@ public:
       q.pop();
 
     for (Vertex &v : G->nodes) {
-      v.color = BLACK;
+      v.color = COLOR_UNVISITED;
     }
+
     currentNode = -1;
     neighborIndex = 0;
+
+    // Start with node 0
     visited[0] = true;
-    G->nodes[0].color = GREEN;
+    G->nodes[0].color = COLOR_VISITED;
     q.push(0);
   }
 };
@@ -197,12 +222,13 @@ int main() {
   G.nodes.push_back({650, 450, 20, BLACK, "F", {}}); // F has no outgoing edges
 
   Block B;
+  B.enqueue(G.nodes[0].text);
   BFSrunner bfs(&G);
   bool wasDown = false;
   while (!WindowShouldClose()) {
     // drawing
     BeginDrawing();
-    ClearBackground(Hex_to_deci("ffffff"));
+    ClearBackground(Hex_to_deci("FAFAFA"));
     B.draw();
     G.draw();
     Next.draw_tri();
@@ -210,13 +236,24 @@ int main() {
     bool nowDown =
         Next.isPressed_tri(); // When release left mouse, nowDown = false;
                               // It will skip the following if statement and
-                              // finally wasDown = false
     if (nowDown && !wasDown) {
-      bfs.step();
+      int id = bfs.step();
+      if (id == -2) {
+        // Traversal complete
+        std::cout << "BFS traversal complete!\n";
+      } else if (id >= 0) {
+        B.enqueue(G.nodes[id].text);
+      } else if (id == -1) {
+        B.dequeue();
+      }
     }
     wasDown = nowDown;
-    if (Reset.isPressed_rec())
+    if (Reset.isPressed_rec()) {
+      std::cout << "-------reset-------\n";
       bfs.reset();
+      B.clear();
+    }
+
     // end drawing
     EndDrawing();
   }
