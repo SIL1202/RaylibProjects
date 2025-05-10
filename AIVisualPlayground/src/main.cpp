@@ -9,6 +9,7 @@
 #include <vector>
 
 void DrawArrow(Vector2 start, Vector2 end, float arrowSize, Color color);
+const float MIN_DISTANCE = 80.0f; // 節點之間的最小距離（含半徑）
 
 struct Vertex {
   int centerX, centerY;
@@ -27,6 +28,87 @@ struct Vertex {
 
 struct Graph {
   std::vector<Vertex> nodes;
+  void generateRandomNodes(int n, int screenWidth, int screenHeight) {
+    nodes.clear();
+    const float MIN_DISTANCE = 80.0f;
+    const int MAX_ATTEMPTS = 100;
+
+    // 計算有效區域時考慮節點半徑
+    int minX = Margin.left + 50; // 左邊界 + 緩衝區
+    int maxX = screenWidth - Margin.right - 50;
+    int minY = Margin.top + 50;
+    int maxY = screenHeight - Margin.bottom - 150;
+
+    // 1. 生成節點位置
+    for (int i = 0; i < n; i++) {
+      int x, y;
+      float r = GetRandomValue(20, 40);
+      bool valid;
+      int attempts = 0;
+
+      do {
+        valid = true;
+        x = GetRandomValue(minX + r, maxX - r); // 確保節點不會超出邊界
+        y = GetRandomValue(minY + r, maxY - r);
+
+        // 檢查與現有節點的距離
+        for (const Vertex &existing : nodes) {
+          float dx = x - existing.centerX;
+          float dy = y - existing.centerY;
+          float minSeparation = r + existing.r + MIN_DISTANCE;
+          if (dx * dx + dy * dy < minSeparation * minSeparation) {
+            valid = false;
+            break;
+          }
+        }
+
+        if (++attempts >= MAX_ATTEMPTS) {
+          std::cerr << "Warning: 無法為節點 " << i << " 找到合適位置\n";
+          // 強制放置但標記為紅色
+          nodes.push_back({x, y, r, RED, TextFormat("%c", 'A' + i), {}});
+          valid = true; // 跳出循環
+        }
+      } while (!valid);
+
+      if (attempts < MAX_ATTEMPTS) {
+        nodes.push_back(
+            {x, y, r, COLOR_UNVISITED, TextFormat("%c", 'A' + i), {}});
+      }
+    }
+
+    // 2. 生成連接（優先連接近的節點）
+    for (int i = 0; i < n; i++) {
+      std::vector<std::pair<float, int>> candidates; // (distance, index)
+
+      // 收集所有候選節點
+      for (int j = 0; j < n; j++) {
+        if (i == j)
+          continue;
+
+        float dx = nodes[i].centerX - nodes[j].centerX;
+        float dy = nodes[i].centerY - nodes[j].centerY;
+        candidates.emplace_back(dx * dx + dy * dy, j);
+      }
+
+      // 按距離排序
+      std::sort(candidates.begin(), candidates.end());
+
+      // 隨機決定連接數 (1~3)
+      int maxEdges = GetRandomValue(1, std::min(3, (int)candidates.size()));
+
+      // 選擇最近的 maxEdges 個節點
+      for (int e = 0; e < maxEdges; e++) {
+        nodes[i].neighbors.push_back(candidates[e].second);
+
+        // 確保連接是雙向的 (可選)
+        if (std::find(nodes[candidates[e].second].neighbors.begin(),
+                      nodes[candidates[e].second].neighbors.end(),
+                      i) == nodes[candidates[e].second].neighbors.end()) {
+          nodes[candidates[e].second].neighbors.push_back(i);
+        }
+      }
+    }
+  }
 
   void draw() const {
     for (const Vertex &node : nodes) {
@@ -138,8 +220,14 @@ public:
   std::vector<bool> visited;
   std::queue<int> q;
 
-  BFSrunner(Graph *g) : G(g), visited(g->nodes.size(), false) {
+  /* BFSrunner(Graph *g) : G(g), visited(g->nodes.size(), false) {
     reset(); // Initialize with reset
+  } */
+  BFSrunner(Graph *g) : G(g), visited(g->nodes.size(), false) {
+    int randomStart = GetRandomValue(0, G->nodes.size() - 1); // 隨機起始點
+    visited[randomStart] = true;
+    G->nodes[randomStart].color = COLOR_VISITED;
+    q.push(randomStart);
   }
 
   int currentNode = -1;
@@ -207,19 +295,22 @@ int main() {
 
   Botton Reset({(float)GetScreenWidth() - Margin.right * 4,
                 (float)GetScreenHeight() - 60, 40.f, 40.f});
+  /*  Graph G;
+   // A = 0
+   G.nodes.push_back({150, 150, 20, BLACK, "A", {2, 4}}); // A -> C, E
+   // B = 1
+   G.nodes.push_back({650, 150, 20, BLACK, "B", {5}}); // B -> F
+   // C = 2
+   G.nodes.push_back({350, 180, 20, BLACK, "C", {1, 3, 5}}); // C -> B, D, F
+   // D = 3
+   G.nodes.push_back({350, 400, 20, BLACK, "D", {5}}); // D -> F
+   // E = 4
+   G.nodes.push_back({120, 500, 20, BLACK, "E", {5}}); // E -> F
+   // F = 5
+   G.nodes.push_back({650, 450, 20, BLACK, "F", {}}); // F has no outgoing edges
+  */
   Graph G;
-  // A = 0
-  G.nodes.push_back({150, 150, 20, BLACK, "A", {2, 4}}); // A -> C, E
-  // B = 1
-  G.nodes.push_back({650, 150, 20, BLACK, "B", {5}}); // B -> F
-  // C = 2
-  G.nodes.push_back({350, 180, 20, BLACK, "C", {1, 3, 5}}); // C -> B, D, F
-  // D = 3
-  G.nodes.push_back({350, 400, 20, BLACK, "D", {5}}); // D -> F
-  // E = 4
-  G.nodes.push_back({120, 500, 20, BLACK, "E", {5}}); // E -> F
-  // F = 5
-  G.nodes.push_back({650, 450, 20, BLACK, "F", {}}); // F has no outgoing edges
+  G.generateRandomNodes(6, GetScreenWidth(), GetScreenHeight());
 
   Block B;
   B.enqueue(G.nodes[0].text);
