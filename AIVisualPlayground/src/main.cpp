@@ -287,7 +287,7 @@ public:
 
 int main() {
   // initialize
-  InitWindow(800, 600, "graph");
+  InitWindow(800, 600, "Breadth First Search");
   Botton Next("../assets/triangle.png",
               {(float)GetScreenWidth() - Margin.right * 8,
                (float)GetScreenHeight() - 65});
