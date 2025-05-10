@@ -1,10 +1,14 @@
 #include "../include/raylib.h"
+#include "../include/raymath.h"
 #include "Global.h"
+#include <algorithm>
 #include <iostream>
+#include <numeric>
 #include <queue>
 #include <vector>
 
-Font font;
+void DrawArrow(Vector2 start, Vector2 end, float arrowSize, Color color);
+
 struct Vertex {
   int centerX, centerY;
   float r;
@@ -15,9 +19,8 @@ struct Vertex {
   void draw() const {
     DrawCircle(centerX, centerY, r, color);
     int textWidth = MeasureText(text, 20);
-    DrawTextEx(font, text,
-               {(float)(centerX - textWidth) / 2, (float)centerY - 10}, 20, 5,
-               WHITE);
+    DrawText(text, (centerX - (float)textWidth / 2), (float)centerY - 10, 20,
+             WHITE);
   }
 };
 
@@ -27,10 +30,26 @@ struct Graph {
   void draw() const {
     for (const Vertex &node : nodes) {
       for (int i : node.neighbors) {
-        DrawLine(node.centerX, node.centerY, nodes[i].centerX, nodes[i].centerY,
-                 BLACK);
+        Vector2 from = {(float)node.centerX, (float)node.centerY};
+        Vector2 to = {(float)nodes[i].centerX, (float)nodes[i].centerY};
+
+        // 拉回箭頭尾端
+        float radius = nodes[i].r;
+        Vector2 dir = Vector2Subtract(to, from);
+        float len = Vector2Length(dir);
+        if (len > 0.01f) {
+          Vector2 unit = Vector2Scale(dir, 1.0f / len);
+          to = Vector2Add(from, Vector2Scale(unit, len - radius));
+        }
+
+        DrawArrow(from, to, 10.0f, BLACK);
       }
-    }
+    } /*  for (const Vertex &node : nodes) {
+        for (int i : node.neighbors) {
+          DrawLine(node.centerX, node.centerY, nodes[i].centerX,
+      nodes[i].centerY, BLACK);
+        }
+      } */
     for (const Vertex &node : nodes)
       node.draw();
   }
@@ -70,6 +89,36 @@ public:
   }
 };
 
+void DrawArrow(Vector2 start, Vector2 end, float arrowSize, Color color) {
+  // 先畫線條
+  DrawLineEx(start, end, 1.5f, color);
+
+  Vector2 dir = Vector2Subtract(end, start);
+  float length = Vector2Length(dir);
+  if (length < 0.001f)
+    return; // 避免除以零或極短線條
+
+  Vector2 unit = Vector2Scale(dir, 1.0f / length); // 歸一化
+  Vector2 normal = {-unit.y, unit.x};              // 垂直向量
+
+  // 限制箭頭大小不超過線條長度的 40%
+  float actualArrowSize =
+      (length * 0.4f < arrowSize) ? length * 0.4f : arrowSize;
+
+  Vector2 p1 = end; // 箭頭尖端
+  Vector2 p2 =
+      Vector2Add(end, Vector2Scale(unit, -actualArrowSize)); // 箭頭基部
+  Vector2 p3 =
+      Vector2Add(p2, Vector2Scale(normal, actualArrowSize * 0.5f)); // 左側點
+  Vector2 p4 =
+      Vector2Add(p2, Vector2Scale(normal, -actualArrowSize * 0.5f)); // 右側點
+
+  // 改用 DrawLine 畫箭頭（3 條線組成三角形）
+  DrawLineEx(p1, p3, 2.5f, color);
+  DrawLineEx(p1, p4, 2.5f, color);
+  DrawLineEx(p3, p4, 2.5f, color);
+}
+
 class BFSrunner {
 public:
   Graph *G;
@@ -82,34 +131,51 @@ public:
     G->nodes[0].color = GREEN;
   }
 
+  int currentNode = -1;
+  size_t neighborIndex = 0;
   bool step() {
-    if (q.empty())
-      return false;
-    int current = q.front();
-    q.pop();
+    if (currentNode == -1) {
+      if (q.empty())
+        return false;
+      currentNode = q.front();
+      q.pop();
+      neighborIndex = 0;
+    }
 
-    for (int neighbor : G->nodes[current].neighbors) {
+    auto neighbors = G->nodes[currentNode].neighbors;
+    while (neighborIndex < neighbors.size()) {
+      int neighbor = neighbors[neighborIndex++];
       if (!visited[neighbor]) {
-        visited[neighbor] = true;
         G->nodes[neighbor].color = GREEN;
         q.push(neighbor);
-        break;
+        return true;
       }
     }
+
+    currentNode = -1;
+    step();
     return true;
   }
 
   void reset() {
-    for (auto g : G->nodes) {
-      g.color = BLACK;
+    std::fill(visited.begin(), visited.end(), false);
+    while (!q.empty())
+      q.pop();
+
+    for (Vertex &v : G->nodes) {
+      v.color = BLACK;
     }
+    currentNode = -1;
+    neighborIndex = 0;
+    visited[0] = true;
+    G->nodes[0].color = GREEN;
+    q.push(0);
   }
 };
 
 int main() {
   // initialize
   InitWindow(800, 600, "graph");
-  font = LoadFontEx("../assets/JetBrainsMonoNerdFont-Bold.ttf", 20, 0, 250);
   Botton Next("../assets/triangle.png",
               {(float)GetScreenWidth() - Margin.right * 8,
                (float)GetScreenHeight() - 65});
