@@ -69,7 +69,13 @@ bool Botton::isPressed_tri() {
 
   if (localX < 0 || localY < 0 || localX >= width || localY >= height)
     return false;
-  return mask[localY * width + localX] && IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+  return mask[localY * width + localX] &&
+         IsMouseButtonDown(
+             MOUSE_BUTTON_LEFT); // only button down can trigger
+                                 // pressing animation, but need to add the
+                                 // stepping logic in the main function,
+                                 // otherwise it will go through the graph in
+                                 // one time.
 }
 
 bool Botton::isPressed_rec() {

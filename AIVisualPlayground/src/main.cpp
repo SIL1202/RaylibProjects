@@ -123,8 +123,8 @@ int main() {
   G.nodes.push_back({650, 150, 20, BLACK, "B", {5}}); // B -> F
   // C = 2
   G.nodes.push_back({350, 180, 20, BLACK, "C", {1, 3, 5}}); // C -> B, D, F
-                                                            // D = 3
-  G.nodes.push_back({350, 400, 20, BLACK, "D", {5}});       // D -> F
+  // D = 3
+  G.nodes.push_back({350, 400, 20, BLACK, "D", {5}}); // D -> F
   // E = 4
   G.nodes.push_back({120, 500, 20, BLACK, "E", {5}}); // E -> F
   // F = 5
@@ -132,6 +132,7 @@ int main() {
 
   Block B;
   BFSrunner bfs(&G);
+  bool wasDown = false;
   while (!WindowShouldClose()) {
     // drawing
     BeginDrawing();
@@ -140,8 +141,14 @@ int main() {
     G.draw();
     Next.draw_tri();
     Reset.draw_rec();
-    if (Next.isPressed_tri())
+    bool nowDown =
+        Next.isPressed_tri(); // When release left mouse, nowDown = false;
+                              // It will skip the following if statement and
+                              // finally wasDown = false
+    if (nowDown && !wasDown) {
       bfs.step();
+    }
+    wasDown = nowDown;
     if (Reset.isPressed_rec())
       bfs.reset();
     // end drawing
