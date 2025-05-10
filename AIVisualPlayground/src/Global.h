@@ -20,10 +20,15 @@ private:
   Texture2D icon;
   std::vector<bool> mask; // true represent non transparancy
   int width, height;
+  Rectangle rectangle;
 
 public:
   Botton(const char *filename, Vector2 p);
-  bool isHover();
-  bool isPressed();
-  void draw();
+  Botton(Rectangle rec);
+  bool isHover_tri();
+  bool isPressed_tri();
+  bool isHover_rec();
+  bool isPressed_rec();
+  void draw_tri();
+  void draw_rec();
 };

@@ -98,6 +98,12 @@ public:
     }
     return true;
   }
+
+  void reset() {
+    for (auto g : G->nodes) {
+      g.color = BLACK;
+    }
+  }
 };
 
 int main() {
@@ -105,9 +111,11 @@ int main() {
   InitWindow(800, 600, "graph");
   font = LoadFontEx("../assets/JetBrainsMonoNerdFont-Bold.ttf", 20, 0, 250);
   Botton Next("../assets/triangle.png",
-              {(float)GetScreenWidth() - Margin.right * 6,
+              {(float)GetScreenWidth() - Margin.right * 8,
                (float)GetScreenHeight() - 65});
 
+  Botton Reset({(float)GetScreenWidth() - Margin.right * 4,
+                (float)GetScreenHeight() - 60, 40.f, 40.f});
   Graph G;
   // A = 0
   G.nodes.push_back({150, 150, 20, BLACK, "A", {2, 4}}); // A -> C, E
@@ -130,9 +138,12 @@ int main() {
     ClearBackground(Hex_to_deci("ffffff"));
     B.draw();
     G.draw();
-    Next.draw();
-    if (Next.isPressed())
+    Next.draw_tri();
+    Reset.draw_rec();
+    if (Next.isPressed_tri())
       bfs.step();
+    if (Reset.isPressed_rec())
+      bfs.reset();
     // end drawing
     EndDrawing();
   }

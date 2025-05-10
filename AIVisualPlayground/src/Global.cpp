@@ -1,4 +1,6 @@
 #include "Global.h"
+#include <cctype>
+#include <vector>
 
 Color Hex_to_deci(const std::string &color) {
   Color c;
@@ -33,7 +35,14 @@ Botton::Botton(const char *filename, Vector2 p) : pos(p) {
   icon = LoadTextureFromImage(img);
 }
 
-bool Botton::isHover() {
+Botton::Botton(Rectangle rec) : rectangle(rec) {
+  width = rec.width;
+  height = rec.height;
+  pos.x = rec.x;
+  pos.y = rec.y;
+}
+
+bool Botton::isHover_tri() {
   Vector2 mouse = GetMousePosition();
   int localX = mouse.x - pos.x;
   int localY = mouse.y - pos.y;
@@ -43,23 +52,55 @@ bool Botton::isHover() {
   return mask[localY * width + localX];
 }
 
-bool Botton::isPressed() {
+bool Botton::isHover_rec() {
+  Vector2 mouse = GetMousePosition();
+  int localX = mouse.x - pos.x;
+  int localY = mouse.y - pos.y;
+
+  if (localX > 0 && localY > 0 && localX <= width && localY <= height)
+    return true;
+  return false;
+}
+
+bool Botton::isPressed_tri() {
   Vector2 mouse = GetMousePosition();
   int localX = mouse.x - pos.x;
   int localY = mouse.y - pos.y;
 
   if (localX < 0 || localY < 0 || localX >= width || localY >= height)
     return false;
-  return mask[localY * width + localX] &&
-         IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+  return mask[localY * width + localX] && IsMouseButtonDown(MOUSE_BUTTON_LEFT);
 }
 
-void Botton::draw() {
-  float scale = isHover() ? 1.2f : 1.0f;
+bool Botton::isPressed_rec() {
+  Vector2 mouse = GetMousePosition();
+  int localX = mouse.x - pos.x;
+  int localY = mouse.y - pos.y;
+
+  if (localX > 0 && localY > 0 && localX <= width && localY <= height &&
+      IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+    return true;
+  return false;
+}
+
+void Botton::draw_tri() {
+  float scale = isPressed_tri() ? 0.8f : (isHover_tri() ? 1.2f : 1.0f);
 
   float offsetX = (width * scale - width) / 2;
   float offsetY = (height * scale - height) / 2;
 
   Vector2 drawPos = {pos.x - offsetX, pos.y - offsetY};
+
   DrawTextureEx(icon, drawPos, 0.0f, scale, WHITE);
+}
+
+void Botton::draw_rec() {
+  float scale = isPressed_rec() ? 0.8f : (isHover_rec() ? 1.2f : 1.0f);
+
+  float offsetX = (width * scale - width) / 2;
+  float offsetY = (height * scale - height) / 2;
+
+  Vector2 drawPos = {pos.x - offsetX, pos.y - offsetY};
+  Rectangle rec = {drawPos.x, drawPos.y, width * scale, height * scale};
+  DrawRectanglePro(rec, {0, 0}, 0.0f, BLACK);
 }
