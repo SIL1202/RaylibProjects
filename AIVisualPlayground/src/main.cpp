@@ -1,9 +1,9 @@
-#include "../include/raylib.h"
-#include "../include/raymath.h"
 #include "Global.h"
 #include <algorithm>
 #include <iostream>
 #include <queue>
+#include <raylib.h>
+#include <raymath.h>
 #include <vector>
 
 void DrawArrow(Vector2 start, Vector2 end, float arrowSize, Color color);

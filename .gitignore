@@ -1,6 +1,2 @@
 **/.DS_Store
-**/main
-**/raylib/
-**/include/
-**/lib/
-./AIVisualPlayground/maze-solver/
+./.clangd
