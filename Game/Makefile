@@ -6,8 +6,8 @@ LDFLAGS = -L/opt/homebrew/lib -lraylib \
 SRC1 = game.cpp
 OUT1 = game
 
-SRC2 = bounding.cpp
-OUT2 = bounding
+SRC2 = bouncing.cpp
+OUT2 = bouncing
 
 $(OUT1): $(SRC1)
 	$(CXX) $(CXXFLAGS) $(SRC1) -o $(OUT1) $(LDFLAGS) && ./$(OUT1) && rm $(OUT1)
