@@ -11,7 +11,7 @@ This repository contains several mini projects built using [Raylib](https://www.
   A basic to-do list app mockup with interactive buttons and task management UI. (Still working on)
 
 - `Game/`  
-  A collection of small, experimental games and visual tests — mostly for fun or prototyping 😆
+  A collection of small, experimental games and visual tests — mostly for fun or prototyping 
 
 ## Built With
 
