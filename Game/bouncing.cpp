@@ -36,7 +36,7 @@ private:
 
 int main() {
 
-  InitWindow(WIDTH, HEIGHT, "BOUNDING");
+  InitWindow(WIDTH, HEIGHT, "BOUNCING");
   Ball ball1({200, 400}, 50, BLACK);
   Ball ball2({500, 200}, 50, BLACK);
   while (!WindowShouldClose()) {
