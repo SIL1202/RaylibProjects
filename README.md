@@ -4,7 +4,7 @@ This repository contains several mini projects built using [Raylib](https://www.
 
 ## Project Overview
 
-- `Algorithm_Visualization/`  
+- `Algorithm_Visualization/BFS`  
   Visualizes the Breadth-First Search (BFS) algorithm step-by-step with interactive queue blocks and dynamic node generation.
 
 - `App/`  
