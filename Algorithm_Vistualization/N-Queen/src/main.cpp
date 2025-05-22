@@ -5,7 +5,6 @@
 using namespace std;
 
 void printBoard(const vector<int> &board, int n) {
-  cout << "Found a solution!\n";
   for (int row = 0; row < n; row++) {
     for (int col = 0; col < n; col++) {
       if (board[row] == col) {
@@ -14,7 +13,7 @@ void printBoard(const vector<int> &board, int n) {
         cout << " . ";
       }
     }
-    cout << endl;
+    cout << '\n';
   }
 }
 
@@ -28,17 +27,15 @@ bool isValid(const vector<int> &board, int row, int col) {
 
 bool solve(int row, vector<int> &board, int n) {
   if (row == n) {
-    printBoard(board, n); // 找到解就印出
-    return true;          // 回傳 true 表示找到解
+    printBoard(board, n); // find solution
+    cout << '\n';
   }
 
   for (int col = 0; col < n; col++) {
     if (isValid(board, row, col)) {
       board[row] = col;
-      if (solve(row + 1, board, n)) {
-        return true; // 如果已找到解，向上回傳
-      }
-      board[row] = -1; // 回溯
+      solve(row + 1, board, n);
+      board[row] = -1; // backtracking
     }
   }
 
@@ -47,7 +44,7 @@ bool solve(int row, vector<int> &board, int n) {
 
 int main() {
   int n;
-  cout << "Enter the number of queens (n): ";
+  cout << "Enter the size of grid: ";
   cin >> n;
 
   vector<int> board(n, -1);
@@ -58,3 +55,18 @@ int main() {
 
   return 0;
 }
+
+// {1, 3, 0, 2}
+// . Q . .
+// . . . Q
+// Q . . .
+// . . Q .
+
+//
+//     0   1   2   3   4
+//   +------------------
+// 0 | \               /
+// 1 |     \       /
+// 2 |         Q
+// 3 |     /       \
+// 4 | /               \
