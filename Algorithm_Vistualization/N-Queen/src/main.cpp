@@ -1,11 +1,11 @@
 #include <cmath>
 #include <iostream>
-#include <unistd.h> // 用於 sleep()
 #include <vector>
 
 using namespace std;
 
 void printBoard(const vector<int> &board, int n) {
+  cout << "Found a solution!\n";
   for (int row = 0; row < n; row++) {
     for (int col = 0; col < n; col++) {
       if (board[row] == col) {
@@ -16,8 +16,6 @@ void printBoard(const vector<int> &board, int n) {
     }
     cout << endl;
   }
-  cout << "------------------" << endl;
-  usleep(300000); // 暫停 0.3 秒
 }
 
 bool isValid(const vector<int> &board, int row, int col) {
@@ -28,21 +26,23 @@ bool isValid(const vector<int> &board, int row, int col) {
   return true;
 }
 
-void solve(int row, vector<int> &board, int n) {
+bool solve(int row, vector<int> &board, int n) {
   if (row == n) {
-    printBoard(board, n); // 找到解也可以印出來
-    return;
+    printBoard(board, n); // 找到解就印出
+    return true;          // 回傳 true 表示找到解
   }
 
   for (int col = 0; col < n; col++) {
     if (isValid(board, row, col)) {
       board[row] = col;
-      printBoard(board, n); // 顯示目前狀態
-      solve(row + 1, board, n);
-      board[row] = -1;      // 回溯
-      printBoard(board, n); // 顯示回溯後狀態
+      if (solve(row + 1, board, n)) {
+        return true; // 如果已找到解，向上回傳
+      }
+      board[row] = -1; // 回溯
     }
   }
+
+  return false; // 無法在這一層找到合法解
 }
 
 int main() {
@@ -50,9 +50,11 @@ int main() {
   cout << "Enter the number of queens (n): ";
   cin >> n;
 
-  vector<int> board(n, -1); // -1 表示該行尚未放皇后
+  vector<int> board(n, -1);
 
-  solve(0, board, n);
+  if (!solve(0, board, n)) {
+    cout << "No solution exists for n = " << n << endl;
+  }
 
   return 0;
 }
