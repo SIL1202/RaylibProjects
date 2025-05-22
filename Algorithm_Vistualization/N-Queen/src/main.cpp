@@ -14,7 +14,7 @@ void printBoard(const vector<int> &board, int n) {
         cout << " . ";
       }
     }
-    cout << endl;
+    cout << '\n';
   }
 }
 
@@ -28,24 +28,22 @@ bool isValid(const vector<int> &board, int row, int col) {
 
 void solve(int row, vector<int> &board, int n) {
   if (row == n) {
-    printBoard(board, n); // 找到解也可以印出來
-    return;
+    printBoard(board, n); // find solution
+    cout << '\n';
   }
 
   for (int col = 0; col < n; col++) {
     if (isValid(board, row, col)) {
       board[row] = col;
-      printBoard(board, n); // 顯示目前狀態
       solve(row + 1, board, n);
-      board[row] = -1;      // 回溯
-      printBoard(board, n); // 顯示回溯後狀態
+      board[row] = -1; // backtracking
     }
   }
 }
 
 int main() {
   int n;
-  cout << "Enter the number of queens (n): ";
+  cout << "Enter the size of grid: ";
   cin >> n;
 
   vector<int> board(n, -1); // -1 表示該行尚未放皇后
