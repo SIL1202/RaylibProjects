@@ -16,8 +16,6 @@ void printBoard(const vector<int> &board, int n) {
     }
     cout << endl;
   }
-  cout << "------------------" << endl;
-  usleep(300000); // 暫停 0.3 秒
 }
 
 bool isValid(const vector<int> &board, int row, int col) {
@@ -56,3 +54,18 @@ int main() {
 
   return 0;
 }
+
+// {1, 3, 0, 2}
+// . Q . .
+// . . . Q
+// Q . . .
+// . . Q .
+
+//
+//     0   1   2   3   4
+//   +------------------
+// 0 | \               /
+// 1 |     \       /
+// 2 |         Q
+// 3 |     /       \
+// 4 | /               \
