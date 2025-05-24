@@ -1,7 +1,6 @@
 #include "raylib.h"
 #include <cmath>
 #include <iostream>
-#include <numeric>
 #include <vector>
 using namespace std;
 #define WIDTH 800
@@ -15,7 +14,13 @@ public:
 
 game::State game::state = game::State::end;
 
-class Button {
+class Drawable {
+public:
+  virtual void draw() const = 0; // abstract function
+  virtual ~Drawable() = default; // base destructor
+};
+
+class Button : public Drawable {
 private:
   Vector2 vec;
   float rad;
@@ -40,7 +45,7 @@ public:
       }
     }
   }
-  void draw() {
+  void draw() const override {
     if (game::state == game::State::end)
       DrawCircle(vec.x, vec.y, rad, col);
     else
@@ -48,99 +53,122 @@ public:
   }
 };
 
-class N_Queen {
+class Board : public Drawable {
+private:
+  Image img;
+  Texture2D board;
+  Texture2D queen;
+
+  Rectangle board_src;
+  float scale;
+  Rectangle board_des;
+
+  Rectangle queen_src;
+  Rectangle queen_des;
+
 public:
-  void printBoard(const vector<int> &board, int n) {
-    for (int row = 0; row < n; row++) {
-      for (int col = 0; col < n; col++) {
-        if (board[row] == col) {
-          cout << " Q ";
-        } else {
-          cout << " . ";
-        }
-      }
-      cout << '\n';
-    }
+  Board(const Image &img) : img(img) {
+    board = LoadTextureFromImage(img);
+    queen = LoadTextureFromImage(img);
+
+    // clang-format off
+    board_src = {
+      0.f,
+      4.f,
+      (float)board.width,
+      (float)board.height - 319
+    };
+
+    scale = (float)WIDTH / (float)board.width;
+    board_des = {
+      0.f,
+      0.f, 
+      board_src.width * scale,
+      board_src.height * scale
+    };
+
+    const float tileW = board.width / 8.f;
+    const float tileH = board.height / 10.f;
+    queen_src = {
+      tileW * 4 + 4,
+      board.height - tileH * 2 - 6,
+      tileW - 1,
+      tileH - 2
+    };
+
+    const float tileW_screen = board_des.width / 8.f;
+    const float tileH_screen = board_des.height / 8.f;
+    queen_des = {
+      board_des.x + tileW_screen * 1,
+      board_des.y + tileH_screen * 1,
+      queen_src.width * scale,
+      queen_src.height * scale
+    };
+    // clang-format on
   }
 
-  bool isValid(const vector<int> &board, int row, int col) {
-    for (int i = 0; i < row; i++) {
-      if (board[i] == col || abs(board[i] - col) == abs(i - row))
-        return false;
-    }
-    return true;
+  ~Board() { UnloadImage(img); }
+
+  void draw() const override {
+    DrawTexturePro(board, board_src, board_des, {0, 0}, 0, WHITE);
   }
 
-  bool solve(int row, vector<int> &board, int n) {
-    if (row == n) {
-      printBoard(board, n); // find solution
-      cout << '\n';
-    }
+  const Rectangle &getBoardSrc() const { return board_src; }
+  const Rectangle &getBoardDes() const { return board_des; }
+  const Rectangle &getQueenSrc() const { return queen_src; }
+  float getScale() const { return scale; }
+  const Texture2D &getBoardTexture() const { return board; }
+  const Texture2D &getQueenTexture() const { return queen; }
+};
 
-    for (int col = 0; col < n; col++) {
-      if (isValid(board, row, col)) {
-        board[row] = col;
-        solve(row + 1, board, n);
-        board[row] = -1; // backtracking
-      }
-    }
+class Queen : public Drawable {
+  int row, col;
+  const Board &board;
 
-    return false; // 無法在這一層找到合法解
+public:
+  Queen(int r, int c, const Board &b) : row(r), col(c), board(b) {}
+
+  void draw() const override {
+    float tileW = board.getBoardDes().width / 8.0f;
+    float tileH = board.getBoardDes().height / 8.0f;
+
+    // clang-format off
+    Rectangle queen_des = {
+      board.getBoardDes().x + col * tileW,
+      board.getBoardDes().y + row * tileH,
+      board.getQueenSrc().width * board.getScale(),
+      board.getQueenSrc().height * board.getScale()
+    };
+
+    // clang-format on
   }
 };
 
 int main() {
   InitWindow(WIDTH, HEIGHT, "N-Queen");
   SetTargetFPS(60);
-  Image img = LoadImage("../assets/Board.png");
-  Texture2D background = LoadTextureFromImage(img);
-  UnloadImage(img);
 
-  Rectangle src = {0.f, 4.f, (float)background.width,
-                   (float)background.height - 319};
-  float scale = (float)WIDTH / (float)src.width;
-  Rectangle des = {0.f, 0.f, src.width * scale, src.height * scale};
-
+  Board board(LoadImage("../assets/Board.png")); // can't modify
   Button activate({700.f, 850.f}, 25.f, GREEN);
+  Queen queen_1(0, 0, board);
+
+  vector<Drawable *> drawables;
+  drawables.push_back(&board);
+  drawables.push_back(&queen_1);
+  drawables.push_back(&activate);
+
   while (!WindowShouldClose()) {
     activate.update();
 
+    // begin of drawing
     BeginDrawing();
     ClearBackground(WHITE);
 
-    DrawTexturePro(background, src, des, {0.f, 0.f}, 0.f, WHITE);
-    activate.draw();
+    for (auto d : drawables)
+      d->draw();
+    // end of drawing
     EndDrawing();
   }
   CloseWindow();
   return 0;
 }
-/*
-int main() {
-  int n;
-  cout << "Enter the size of grid: ";
-  cin >> n;
-
-  vector<int> board(n, -1);
-
-  if (!solve(0, board, n)) {
-    cout << "No solution exists for n = " << n << endl;
-  }
-
-  return 0;
-} */
-
-// {1, 3, 0, 2}
-// . Q . .
-// . . . Q
-// Q . . .
-// . . Q .
-
-//
-//     0   1   2   3   4
-//   +------------------
-// 0 | \               /
-// 1 |     \       /
-// 2 |         Q
-// 3 |     /       \
-// 4 | /               \
