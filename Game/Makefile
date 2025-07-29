@@ -1,3 +1,4 @@
+CC = gcc -I/opt/homebrew/include 
 CXX = g++
 CXXFLAGS = -std=c++17 -I/opt/homebrew/include
 LDFLAGS = -L/opt/homebrew/lib -lraylib \
@@ -19,7 +20,7 @@ $(OUT2): $(SRC2)
 	$(CXX) $(CXXFLAGS) $(SRC2) -o $(OUT2) $(LDFLAGS) && ./$(OUT2) && rm $(OUT2)
 
 $(OUT3): $(SRC3)
-	gcc -I/opt/homebrew/include $(SRC3) -o $(OUT3) $(LDFLAGS) && ./$(OUT3) && rm $(OUT3)
+	$(CC) $(SRC3) -o $(OUT3) $(LDFLAGS) && ./$(OUT3) && rm $(OUT3)
 
 clean:
 	rm -f $(OUT1) $(OUT2) $(OUT3)
